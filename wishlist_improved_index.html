@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f7f4ef">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ほしいものリスト">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>ほしいものリスト</title>
+<style>
+:root{--bg:#f7f4ef;--card:#fff;--ink:#292722;--muted:#827d73;--accent:#638c7c;--line:#e9e4dc}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding:env(safe-area-inset-top) 16px calc(24px + env(safe-area-inset-bottom))}
+main{max-width:680px;margin:auto}
+.top{padding:26px 4px 14px}
+.eyebrow{font-size:12px;letter-spacing:.14em;color:var(--accent);font-weight:700}
+h1{font-size:27px;margin:7px 0 4px}
+.sub,.meta{color:var(--muted);font-size:13px}
+.summary{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:12px 0 18px}
+.sumcard{background:#e8eee9;border-radius:16px;padding:14px 15px;min-width:0}
+.sumcard.owned{background:#f0ece5}
+.sumcard small{color:#5d786b;font-size:12px}
+.sumcard.owned small{color:#82766a}
+.sumrow{display:flex;justify-content:space-between;align-items:end;gap:5px;margin-top:5px}
+.sumrow strong{font-size:clamp(18px,5vw,23px);overflow-wrap:anywhere}
+.sumrow span{font-size:12px;color:var(--muted);white-space:nowrap}
+button,input,select,textarea{font:inherit}
+input,select,textarea{font-size:16px!important}
+button{border:0;cursor:pointer}
+.add{background:var(--accent);color:white;border-radius:14px;padding:13px;width:100%;font-weight:700}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:17px 0 12px;padding:5px;background:#eeeae3;border-radius:14px}
+.tab{background:transparent;color:var(--muted);border-radius:10px;padding:11px 8px;font-size:12px;font-weight:800;letter-spacing:.09em}
+.tab.active{background:white;color:var(--accent);box-shadow:0 1px 4px #29272212}
+.tab span{font-weight:600;letter-spacing:0;margin-left:5px}
+.tools{display:flex;gap:8px;margin:14px 0 10px}
+.tools input{flex:1;min-width:0}
+.field{background:white;border:1px solid var(--line);border-radius:12px;padding:11px 12px;width:100%;color:var(--ink)}
+.filters{display:flex;gap:7px;overflow:auto;padding:2px 0 12px}
+.chip{white-space:nowrap;background:white;color:var(--muted);border:1px solid var(--line);padding:8px 12px;border-radius:30px;font-size:12px}
+.chip.active{background:#e8eee9;color:#426b5b;border-color:#dce6df}
+.list{display:grid;gap:10px}
+.item{background:white;border:1px solid var(--line);border-radius:17px;padding:14px}
+.itemtop{display:flex;gap:12px;align-items:flex-start}
+.product-img{width:84px;height:84px;object-fit:cover;border-radius:12px;background:#f3f0ea;flex:none}
+.itembody{min-width:0;flex:1}
+.item h3{font-size:16px;margin:0 0 5px;overflow-wrap:anywhere}
+.brand{font-size:12px;color:var(--muted);margin-bottom:5px}
+.price{font-weight:700;font-size:16px;margin-top:6px}
+.meta{display:flex;gap:8px;flex-wrap:wrap;font-size:12px}
+.memo{font-size:13px;white-space:pre-wrap;color:#625e57;margin:10px 0 0}
+.item a{font-size:12px;color:var(--accent);display:inline-block;margin-top:8px;overflow-wrap:anywhere}
+.purchase-date{font-size:12px;color:var(--muted);margin-top:6px}
+.actions{display:flex;gap:7px;margin-top:12px;flex-wrap:wrap}
+.actions button{background:#f4f1eb;border-radius:9px;padding:8px 10px;font-size:12px}
+.actions .purchased{background:#e8eee9;color:#426b5b}
+.empty{text-align:center;color:var(--muted);padding:35px 10px;font-size:14px}
+dialog{border:0;border-radius:20px;padding:0;width:calc(100% - 28px);max-width:520px;max-height:90vh;background:var(--bg);color:var(--ink)}
+dialog::backdrop{background:#24231f88}
+.modal{padding:20px;overflow:auto;max-height:90vh}
+.modal h2{margin:0 0 15px;font-size:20px}
+.formgrid{display:grid;gap:11px}
+.formgrid label{font-size:12px;color:var(--muted);display:grid;gap:5px}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.preview{width:110px;height:110px;object-fit:cover;border-radius:12px;background:#eee;display:none}
+.modalactions{display:flex;gap:8px;margin-top:17px}
+.modalactions button{flex:1;padding:12px;border-radius:12px;background:#e9e4dc}
+.modalactions .save{background:var(--accent);color:white}
+.foot{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:20px 0;font-size:12px}
+.foot button{background:none;color:var(--accent);text-decoration:underline}
+.hidden{display:none!important}
+@media(max-width:360px){.summary{gap:6px}.sumcard{padding:12px 10px}.twocol{gap:7px}}
+</style>
+</head>
+<body>
+<main>
+<header class="top">
+  <div class="eyebrow">MY LITTLE WISHLIST</div>
+  <h1>ほしいものリスト</h1>
+  <div class="sub">いつか迎えたいものを、ゆっくり集めよう。</div>
+</header>
+
+<section class="summary" aria-label="金額の集計">
+  <div class="sumcard">
+    <small>TO BUY · 未購入合計</small>
+    <div class="sumrow"><strong id="totalToBuy">¥0</strong><span id="countToBuy">0 件</span></div>
+  </div>
+  <div class="sumcard owned">
+    <small>OWNED · 購入済み合計</small>
+    <div class="sumrow"><strong id="totalOwned">¥0</strong><span id="countOwned">0 件</span></div>
+  </div>
+</section>
+
+<button class="add" id="addBtn">＋ ほしいものを追加</button>
+
+<nav class="tabs" aria-label="リスト切り替え">
+  <button class="tab active" id="toBuyTab" type="button">TO BUY <span id="toBuyTabCount">0</span></button>
+  <button class="tab" id="ownedTab" type="button">OWNED <span id="ownedTabCount">0</span></button>
+</nav>
+
+<div class="tools">
+  <input class="field" id="search" placeholder="キーワード・ブランドで検索" aria-label="検索">
+  <select class="field" id="sort" style="max-width:132px" aria-label="並べ替え">
+    <option value="new">新しい順</option>
+    <option value="priceHigh">価格が高い順</option>
+    <option value="priceLow">価格が安い順</option>
+  </select>
+</div>
+
+<div class="filters" id="filters">
+  <button class="chip active" data-filter="all" type="button">すべて</button>
+  <button class="chip" data-filter="considering" type="button">検討中</button>
+  <button class="chip" data-filter="planned" type="button">購入予定</button>
+  <button class="chip" data-filter="high" type="button">優先度高</button>
+</div>
+
+<section class="list" id="list" aria-live="polite"></section>
+
+<div class="foot">
+  <button id="exportBtn" type="button">バックアップを書き出す</button>
+  <button id="importBtn" type="button">バックアップを読み込む</button>
+  <input id="fileInput" type="file" accept="application/json" class="hidden">
+</div>
+</main>
+
+<dialog id="editor">
+<form class="modal" id="itemForm">
+  <h2 id="formTitle">ほしいものを追加</h2>
+  <div class="formgrid">
+    <label>商品名 *
+      <input class="field" id="name" required maxlength="100" placeholder="例：一粒ダイヤネックレス">
+    </label>
+    <label>ブランド名
+      <input class="field" id="brand" maxlength="80" placeholder="例：ete">
+    </label>
+    <label>商品画像（写真から選択）
+      <input class="field" id="imageFile" type="file" accept="image/*">
+      <img id="preview" class="preview" alt="画像プレビュー">
+      <button type="button" id="removeImage" class="hidden">画像を削除</button>
+    </label>
+    <div class="twocol">
+      <label>価格（円）
+        <input class="field" id="price" type="number" min="0" step="1" placeholder="30000">
+      </label>
+      <label>カテゴリ
+        <select class="field" id="category">
+          <option>ジュエリー</option><option>ファッション</option><option>美容</option>
+          <option>家電・ガジェット</option><option>インテリア</option><option>趣味</option><option>その他</option>
+        </select>
+      </label>
+    </div>
+    <div class="twocol">
+      <label>優先度
+        <select class="field" id="priority">
+          <option value="normal">ふつう</option><option value="high">高い</option><option value="low">低い</option>
+        </select>
+      </label>
+      <label>ステータス
+        <select class="field" id="status">
+          <option value="considering">検討中</option>
+          <option value="planned">購入予定</option>
+          <option value="purchased">購入済み</option>
+        </select>
+      </label>
+    </div>
+    <label id="purchaseDateLabel" class="hidden">購入日（任意）
+      <input class="field" id="purchaseDate" type="date">
+    </label>
+    <label>商品ページURL
+      <input class="field" id="url" type="url" placeholder="https://...">
+    </label>
+    <label>メモ
+      <textarea class="field" id="memo" rows="3"></textarea>
+    </label>
+  </div>
+  <div class="modalactions">
+    <button type="button" id="cancel">キャンセル</button>
+    <button class="save" type="submit">保存する</button>
+  </div>
+</form>
+</dialog>
+
+<script>
+'use strict';
+const KEY='my-wishlist-v1';
+let items=[];
+let editing=null;
+let activeTab='toBuy';
+let filter='all';
+let imageData='';
+
+const $=id=>document.getElementById(id);
+const yen=n=>'¥'+Number(n||0).toLocaleString('ja-JP');
+
+function normalizeItem(item){
+  const x=(item && typeof item==='object')?item:{};
+  let status=x.status;
+  if(status==='bought'||status==='purchased') status='purchased';
+  else if(status==='planned'||status==='decided') status='planned';
+  else status='considering'; // old "want" and unknown/empty values
+  return {...x,status,purchaseDate:typeof x.purchaseDate==='string'?x.purchaseDate:''};
+}
+
+function loadItems(){
+  try{
+    const raw=JSON.parse(localStorage.getItem(KEY)||'[]');
+    if(Array.isArray(raw)){
+      const normalized=raw.map(normalizeItem);
+      items=normalized;
+      // Keep the same storage key and migrate old statuses without discarding any fields.
+      if(JSON.stringify(raw)!==JSON.stringify(normalized)){
+        try{localStorage.setItem(KEY,JSON.stringify(normalized));}catch(e){}
+      }
+    }else{
+      items=[];
+    }
+  }catch(e){
+    items=[];
+  }
+}
+
+function persist(){
+  try{
+    localStorage.setItem(KEY,JSON.stringify(items));
+    render();
+  }catch(e){
+    alert('保存容量が不足しています。画像を小さくするか、画像を外してください。');
+  }
+}
+
+function statusLabel(status){
+  if(status==='purchased') return '購入済み';
+  if(status==='planned') return '購入予定';
+  return '検討中';
+}
+
+function updatePurchaseDateVisibility(){
+  $('purchaseDateLabel').classList.toggle('hidden',$('status').value!=='purchased');
+}
+
+function render(){
+  const toBuy=items.filter(x=>x.status!=='purchased');
+  const owned=items.filter(x=>x.status==='purchased');
+  $('totalToBuy').textContent=yen(toBuy.reduce((s,x)=>s+Number(x.price||0),0));
+  $('countToBuy').textContent=toBuy.length+' 件';
+  $('totalOwned').textContent=yen(owned.reduce((s,x)=>s+Number(x.price||0),0));
+  $('countOwned').textContent=owned.length+' 件';
+  $('toBuyTabCount').textContent=toBuy.length;
+  $('ownedTabCount').textContent=owned.length;
+
+  $('toBuyTab').classList.toggle('active',activeTab==='toBuy');
+  $('ownedTab').classList.toggle('active',activeTab==='owned');
+
+  const filterArea=$('filters');
+  if(activeTab==='toBuy'){
+    filterArea.innerHTML=
+      '<button class="chip" data-filter="all" type="button">すべて</button>'+
+      '<button class="chip" data-filter="considering" type="button">検討中</button>'+
+      '<button class="chip" data-filter="planned" type="button">購入予定</button>'+
+      '<button class="chip" data-filter="high" type="button">優先度高</button>';
+  }else{
+    filterArea.innerHTML=
+      '<button class="chip" data-filter="all" type="button">すべて</button>'+
+      '<button class="chip" data-filter="high" type="button">優先度高</button>';
+  }
+  filterArea.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active',c.dataset.filter===filter));
+
+  const q=$('search').value.trim().toLowerCase();
+  let arr=items.filter(x=>{
+    const inTab=activeTab==='owned'?x.status==='purchased':x.status!=='purchased';
+    const searchable=[x.name,x.brand,x.category,x.memo,x.url].join(' ').toLowerCase();
+    const matchesFilter=filter==='all'||
+      (filter==='high'&&x.priority==='high')||
+      (filter==='considering'&&x.status==='considering')||
+      (filter==='planned'&&x.status==='planned');
+    return inTab&&(!q||searchable.includes(q))&&matchesFilter;
+  });
+
+  if($('sort').value==='priceHigh') arr.sort((a,b)=>Number(b.price||0)-Number(a.price||0));
+  if($('sort').value==='priceLow') arr.sort((a,b)=>Number(a.price||0)-Number(b.price||0));
+  if($('sort').value==='new') arr.sort((a,b)=>Number(b.created||0)-Number(a.created||0));
+
+  $('list').innerHTML='';
+  if(!arr.length){
+    const empty=document.createElement('div');
+    empty.className='empty';
+    empty.textContent=q?'検索結果がありません。':(activeTab==='owned'?'購入済みのアイテムはまだありません。':'まだリストは空っぽ。気になるものを追加してみよう ✨');
+    $('list').append(empty);
+    return;
+  }
+
+  arr.forEach(x=>{
+    const el=document.createElement('article');
+    el.className='item';
+    const top=document.createElement('div');
+    top.className='itemtop';
+    if(x.image){
+      const im=document.createElement('img');
+      im.className='product-img';
+      im.src=x.image;
+      im.alt='';
+      top.append(im);
+    }
+    const body=document.createElement('div');
+    body.className='itembody';
+    const h=document.createElement('h3');
+    h.textContent=x.name||'名称未設定';
+    body.append(h);
+
+    if(x.brand){
+      const b=document.createElement('div');
+      b.className='brand';
+      b.textContent=x.brand;
+      body.append(b);
+    }
+
+    const meta=document.createElement('div');
+    meta.className='meta';
+    meta.textContent=[x.category,x.priority==='high'?'優先度：高':null,statusLabel(x.status)].filter(Boolean).join(' ・ ');
+    body.append(meta);
+
+    const p=document.createElement('div');
+    p.className='price';
+    p.textContent=yen(x.price);
+    body.append(p);
+    top.append(body);
+    el.append(top);
+
+    if(x.status==='purchased'&&x.purchaseDate){
+      const date=document.createElement('div');
+      date.className='purchase-date';
+      date.textContent='購入日：'+x.purchaseDate.replaceAll('-','/');
+      el.append(date);
+    }
+    if(x.memo){
+      const m=document.createElement('p');
+      m.className='memo';
+      m.textContent=x.memo;
+      el.append(m);
+    }
+    if(x.url){
+      const a=document.createElement('a');
+      a.href=x.url;
+      a.target='_blank';
+      a.rel='noopener noreferrer';
+      a.textContent='商品ページを開く ↗';
+      el.append(a);
+    }
+
+    const acts=document.createElement('div');
+    acts.className='actions';
+    const toggle=document.createElement('button');
+    toggle.className=x.status==='purchased'?'purchased':'';
+    toggle.textContent=x.status==='purchased'?'未購入に戻す':'購入済みにする';
+    toggle.onclick=()=>{
+      if(x.status==='purchased'){
+        x.status='considering';
+        x.purchaseDate='';
+      }else{
+        x.status='purchased';
+        x.purchaseDate=x.purchaseDate||'';
+      }
+      persist();
+    };
+
+    const edit=document.createElement('button');
+    edit.textContent='編集';
+    edit.onclick=()=>openEditor(x.id);
+
+    const del=document.createElement('button');
+    del.textContent='削除';
+    del.onclick=()=>{
+      if(confirm('このアイテムを削除しますか？')){
+        items=items.filter(i=>i.id!==x.id);
+        persist();
+      }
+    };
+    acts.append(toggle,edit,del);
+    el.append(acts);
+    $('list').append(el);
+  });
+}
+
+function previewImage(data){
+  imageData=data||'';
+  $('preview').src=imageData;
+  $('preview').style.display=imageData?'block':'none';
+  $('removeImage').classList.toggle('hidden',!imageData);
+}
+
+function openEditor(id=null){
+  editing=id;
+  const found=items.find(i=>i.id===id)||{};
+  const x=normalizeItem(found);
+  $('formTitle').textContent=id?'アイテムを編集':'ほしいものを追加';
+  $('name').value=x.name||'';
+  $('brand').value=x.brand||'';
+  $('price').value=x.price??'';
+  $('category').value=x.category||'ジュエリー';
+  $('priority').value=x.priority||'normal';
+  $('status').value=x.status||'considering';
+  $('purchaseDate').value=x.purchaseDate||'';
+  $('url').value=x.url||'';
+  $('memo').value=x.memo||'';
+  $('imageFile').value='';
+  previewImage(x.image||'');
+  updatePurchaseDateVisibility();
+  $('editor').showModal();
+}
+
+$('imageFile').onchange=async e=>{
+  const f=e.target.files[0];
+  if(!f)return;
+  const url=URL.createObjectURL(f);
+  const img=new Image();
+  img.onload=()=>{
+    const scale=Math.min(1,640/Math.max(img.width,img.height));
+    const c=document.createElement('canvas');
+    c.width=Math.max(1,Math.round(img.width*scale));
+    c.height=Math.max(1,Math.round(img.height*scale));
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    previewImage(c.toDataURL('image/jpeg',.68));
+    URL.revokeObjectURL(url);
+  };
+  img.onerror=()=>{
+    alert('画像を読み込めませんでした');
+    URL.revokeObjectURL(url);
+  };
+  img.src=url;
+};
+
+$('removeImage').onclick=()=>{
+  previewImage('');
+  $('imageFile').value='';
+};
+$('status').onchange=updatePurchaseDateVisibility;
+$('addBtn').onclick=()=>openEditor();
+$('cancel').onclick=()=>$('editor').close();
+
+$('itemForm').onsubmit=e=>{
+  e.preventDefault();
+  const old=items.find(i=>i.id===editing);
+  const x={
+    ...(old||{}),
+    id:editing||crypto.randomUUID(),
+    name:$('name').value.trim(),
+    brand:$('brand').value.trim(),
+    image:imageData,
+    price:Number($('price').value||0),
+    category:$('category').value,
+    priority:$('priority').value,
+    status:$('status').value,
+    purchaseDate:$('status').value==='purchased'?$('purchaseDate').value:'',
+    url:$('url').value.trim(),
+    memo:$('memo').value.trim(),
+    created:old?.created||Date.now()
+  };
+  if(old) items=items.map(i=>i.id===editing?x:i);
+  else items.push(x);
+  persist();
+  $('editor').close();
+};
+
+$('toBuyTab').onclick=()=>{
+  activeTab='toBuy';
+  filter='all';
+  render();
+};
+$('ownedTab').onclick=()=>{
+  activeTab='owned';
+  filter='all';
+  render();
+};
+$('search').oninput=render;
+$('sort').onchange=render;
+$('filters').onclick=e=>{
+  const b=e.target.closest('button[data-filter]');
+  if(!b)return;
+  filter=b.dataset.filter;
+  render();
+};
+
+$('exportBtn').onclick=()=>{
+  const blob=new Blob([JSON.stringify(items,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  const url=URL.createObjectURL(blob);
+  a.href=url;
+  a.download='wishlist-backup.json';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
+
+$('importBtn').onclick=()=>$('fileInput').click();
+$('fileInput').onchange=async e=>{
+  const f=e.target.files[0];
+  if(!f)return;
+  try{
+    const data=JSON.parse(await f.text());
+    if(!Array.isArray(data))throw Error('invalid backup');
+    if(confirm('現在のリストを読み込んだ内容に置き換えますか？')){
+      items=data.map(normalizeItem);
+      persist();
+    }
+  }catch(err){
+    alert('バックアップファイルを読み込めませんでした');
+  }
+  e.target.value='';
+};
+
+loadItems();
+if('serviceWorker'in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261110').catch(()=>{}));
+}
+render();
+</script>
+</body>
+</html>
