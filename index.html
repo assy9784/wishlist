@@ -21,8 +21,10 @@ h1{font-size:27px;margin:7px 0 4px}
 .summary{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:12px 0 18px}
 .sumcard{background:#e8eee9;border-radius:16px;padding:14px 15px;min-width:0}
 .sumcard.owned{background:#f0ece5}
+.sumcard.planned{background:#edf0e9;grid-column:1/-1}
 .sumcard small{color:#5d786b;font-size:12px}
 .sumcard.owned small{color:#82766a}
+.sumcard.planned small{color:#63806c}
 .sumrow{display:flex;justify-content:space-between;align-items:end;gap:5px;margin-top:5px}
 .sumrow strong{font-size:clamp(18px,5vw,23px);overflow-wrap:anywhere}
 .sumrow span{font-size:12px;color:var(--muted);white-space:nowrap}
@@ -89,6 +91,10 @@ dialog::backdrop{background:#24231f88}
   <div class="sumcard owned">
     <small>OWNED · 購入済み合計</small>
     <div class="sumrow"><strong id="totalOwned">¥0</strong><span id="countOwned">0 件</span></div>
+  </div>
+  <div class="sumcard planned">
+    <small>PLANNED · 購入予定合計</small>
+    <div class="sumrow"><strong id="totalPlanned">¥0</strong><span id="countPlanned">0 件</span></div>
   </div>
 </section>
 
@@ -242,10 +248,13 @@ function updatePurchaseDateVisibility(){
 function render(){
   const toBuy=items.filter(x=>x.status!=='purchased');
   const owned=items.filter(x=>x.status==='purchased');
+  const planned=items.filter(x=>x.status==='planned');
   $('totalToBuy').textContent=yen(toBuy.reduce((s,x)=>s+Number(x.price||0),0));
   $('countToBuy').textContent=toBuy.length+' 件';
   $('totalOwned').textContent=yen(owned.reduce((s,x)=>s+Number(x.price||0),0));
   $('countOwned').textContent=owned.length+' 件';
+  $('totalPlanned').textContent=yen(planned.reduce((s,x)=>s+Number(x.price||0),0));
+  $('countPlanned').textContent=planned.length+' 件';
   $('toBuyTabCount').textContent=toBuy.length;
   $('ownedTabCount').textContent=owned.length;
 
@@ -510,7 +519,7 @@ $('fileInput').onchange=async e=>{
 
 loadItems();
 if('serviceWorker'in navigator){
-  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261110').catch(()=>{}));
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261112').catch(()=>{}));
 }
 render();
 </script>
